@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>坐标变换（经纬度 <-> 平面坐标）</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <style>
+        html,body,#container{
+            height:100%;
+            width:100%;
+        }
+        .btn{
+            width:14em;
+            margin-left:3.2rem;  
+            margin-top: 0.8rem; 
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div class="input-card">
+    <label style='color:grey'>设置中心点</label>
+    <div class="input-item">
+            <div class="input-item-prepend">
+                <span class="input-item-text" >中心点</span>
+            </div>
+            <input id='centerPos' type="text" value="102.207567,38.519204">
+    </div>
+
+    <label style='color:grey'>请输入缩放级别</label>
+    <div class="input-item">
+            <div class="input-item-prepend">
+                <span class="input-item-text" >缩放级别</span>
+            </div>
+            <input id='zoomLevel' type="text" value="19">
+    </div>
+
+    <label style='color:grey'>请输入或点击地图获取经纬度：(经度,纬度)</label>
+    <div class="input-item">
+            <div class="input-item-prepend">
+                <span class="input-item-text" >经纬度</span>
+            </div>
+            <input id='lnglat' type="text" value="102.207567,38.519204">
+            
+    </div>
+
+    <label style='color:grey'>请输入图片宽高</label>
+    <div class="input-item">
+            <div class="input-item-prepend">
+                <span class="input-item-text" >图片宽高</span>
+            </div>
+            <input id='pic' type="text" value="335,288">
+            
+    </div>
+
+    <label style='color:grey'>结果</label>
+    
+    <div class="input-item">
+            <div class="input-item-prepend">
+                <span class="input-item-text">平面坐标</span>
+            </div>
+            <input id='result' type="text">
+    </div>
+
+    <!-- <label style='color:grey'>请输入平面地图像素坐标：(x,y)</label>
+    
+    <div class="input-item">
+            <div class="input-item-prepend">
+                <span class="input-item-text">平面坐标</span>
+            </div>
+            <input id='pixel' type="text">
+    </div> -->
+    <div>
+        <!-- <input id="lnglat2pixel" type="button" class="btn" value="经纬度 -> 平面像素坐标" />
+        <input id="pixel2lnglat" type="button" class="btn" value="平面像素坐标 -> 经纬度" /> -->
+        <input id="calc" type="button" class="btn" value="转换" />
+    </div>
+</div>
+
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=您申请的key值&plugin=AMap.Geocoder"></script>
+<script type="text/javascript">
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+        zoom:19,
+        center:[103.798878,36.052500]
+    });
+
+    var $ = function(elementId){
+        return document.getElementById(elementId);
+    };
+    var lnglatInput = $('lnglat');
+    // var pixelInput = $('pixel');
+    var picInput = $('pic');
+    var resultInput = $('result');
+    var zoomLevelInput = $('zoomLevel')
+    var centerPosInput = $('centerPos')
+
+    // 计算图片宽高（像素）
+    function calcPic() {
+        if(!picInput.value) return
+        var inputVal = picInput.value.split(',');
+        return {
+            x: inputVal[0] /= 2,
+            y: inputVal[1] /= 2
+        }
+    }
+
+    // 计算右上角的像素值
+    function calcRightTop(pixel) {
+        var pic = calcPic()
+        pixel.x += pic.x;
+        pixel.y -= pic.y;
+        return pixel;
+    }
+
+    // 转换坐标
+    function getResult(data) {
+        var rtVal = calcRightTop(data);
+        var zoom = map.getZoom(); 
+        var pixel = new AMap.Pixel(rtVal.x,rtVal.y);
+        var lnglat = map.pixelToLngLat(pixel,zoom);
+        resultInput.value = lnglat;
+    }
+    
+    // 经纬度坐标转成平面像素坐标
+    function lnglat2pixel() {
+        if(!lnglatInput.value || !zoomLevelInput.value) return
+        map.setZoom(zoomLevelInput.value);
+        var zoom = map.getZoom(); 
+        var inputVal = lnglatInput.value.split(',');
+        var lnglat = new AMap.LngLat(inputVal[0], inputVal[1]);
+        var pixel = map.lnglatToPixel(lnglat,zoom);
+        pixel.x = parseInt(pixel.x);
+        pixel.y = parseInt(pixel.y);
+        // pixelInput.value = pixel;
+
+        getResult(pixel)
+    }
+
+    // 设置中心点
+    function setCenter() {
+        if(!centerPos.value) return
+        map.setCenter(centerPos.value.split(','))
+    }
+
+    // 平面像素坐标转成经纬度坐标
+    // function pixel2lnglat() {
+    //     if(!pixelInput.value) return
+    //     var zoom = map.getZoom(); 
+    //     var inputVal = pixelInput.value.split(',');
+    //     var pixel = new AMap.Pixel(inputVal[0],inputVal[1]);
+    //     var lnglat = map.pixelToLngLat(pixel,zoom);
+    //     lnglatInput.value = lnglat;
+    // }
+    // lnglat2pixel();
+    // map.on( 'click',  function (e) {
+    //     lnglatInput.value = e.lnglat.toString();
+    // });
+    // document.getElementById("lnglat2pixel").onclick = lnglat2pixel;
+    // document.getElementById("pixel2lnglat").onclick = pixel2lnglat;
+
+    document.getElementById("calc").onclick = lnglat2pixel;
+    document.getElementById("centerPos").onblur = setCenter;
+
+</script>
+</body>
+</html>
